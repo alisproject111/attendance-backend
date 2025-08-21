@@ -11,9 +11,21 @@ module.exports = (req, res) => {
   })
 
   try {
-    // Ensure proper URL handling for root requests
     if (req.url === "/" || req.url === "" || req.originalUrl === "/") {
-      console.log("[v0] Root route detected, handling directly")
+      console.log("[v0] Root route detected, returning API info")
+      return res.json({
+        message: "Attendance Management API",
+        version: "1.0.0",
+        status: "Running",
+        endpoints: {
+          auth: "/api/auth (POST /login, /register, /verify-email, /forgot-password, /reset-password)",
+          users: "/api/users (GET /, POST /, PUT /:id, DELETE /:id)",
+          attendance: "/api/attendance (GET /, POST /, PUT /:id, DELETE /:id)",
+          leave: "/api/leave (GET /, POST /, PUT /:id, DELETE /:id)",
+          health: "/api/health",
+        },
+        documentation: "Visit /api/health for health check",
+      })
     }
 
     // Handle the request with Express app
