@@ -65,29 +65,38 @@ const connectDB = async () => {
 
     if (mongoose.connection.readyState === 0) {
       console.log("Establishing new MongoDB connection...")
+      console.log("Connection string format:", process.env.MONGO_URI.substring(0, 20) + "...")
+
       await mongoose.connect(process.env.MONGO_URI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-        socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-        maxPoolSize: 10, // Maintain up to 10 socket connections
-        bufferCommands: false, // Disable mongoose buffering
-        bufferMaxEntries: 0, // Disable mongoose buffering
+        serverSelectionTimeoutMS: 10000, // Increased timeout to 10s
+        socketTimeoutMS: 45000,
+        maxPoolSize: 10,
+        bufferCommands: false,
+        bufferMaxEntries: 0,
       })
       console.log("✅ MongoDB connected successfully")
       console.log("Database name:", mongoose.connection.name)
+      console.log("Connection host:", mongoose.connection.host)
     } else if (mongoose.connection.readyState === 1) {
       console.log("✅ MongoDB already connected")
     } else {
       console.log("MongoDB connection state:", mongoose.connection.readyState)
     }
+    return true
   } catch (err) {
     console.error("❌ MongoDB connection error:", err.message)
-    console.error("Full error:", err)
+    console.error("Error name:", err.name)
+    console.error("Error code:", err.code)
+    if (err.reason) {
+      console.error("Error reason:", err.reason)
+    }
     // Don't exit in serverless environment
     if (process.env.VERCEL !== "1") {
       process.exit(1)
     }
+    return false
   }
 }
 
@@ -102,15 +111,27 @@ app.use("/api/leave", leaveRoutes)
 
 // Health check
 app.get("/api/health", async (req, res) => {
+  let connectionAttempted = false
+
   if (mongoose.connection.readyState !== 1) {
     console.log("Database disconnected, attempting to reconnect...")
+    connectionAttempted = true
     await connectDB()
+  }
+
+  const connectionStates = {
+    0: "Disconnected",
+    1: "Connected",
+    2: "Connecting",
+    3: "Disconnecting",
   }
 
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
-    database: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected",
+    database: connectionStates[mongoose.connection.readyState] || "Unknown",
+    connectionState: mongoose.connection.readyState,
+    connectionAttempted,
     environment: {
       mongoUri: !!process.env.MONGO_URI,
       jwtSecret: !!process.env.JWT_SECRET,
