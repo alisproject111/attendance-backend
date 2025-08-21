@@ -20,6 +20,38 @@ app.use(
 app.use(express.json({ limit: "10mb" }))
 app.use(express.urlencoded({ extended: true, limit: "10mb" }))
 
+// Root route handler
+app.get("/", (req, res) => {
+  console.log("[v0] Root route handler called")
+  res.json({
+    message: "Attendance Management API",
+    version: "1.0.0",
+    status: "Running",
+    endpoints: {
+      health: "/api/health",
+      auth: {
+        login: "POST /api/auth/login",
+        register: "POST /api/auth/register",
+        logout: "POST /api/auth/logout",
+      },
+      users: {
+        profile: "GET /api/users/profile",
+        update: "PUT /api/users/profile",
+      },
+      attendance: {
+        checkin: "POST /api/attendance/checkin",
+        checkout: "POST /api/attendance/checkout",
+        records: "GET /api/attendance/records",
+      },
+      leave: {
+        apply: "POST /api/leave/apply",
+        requests: "GET /api/leave/requests",
+      },
+    },
+    documentation: "Visit /api/health for system status",
+  })
+})
+
 // Database connection
 console.log("Connecting to MongoDB...")
 console.log("MongoDB URI:", process.env.MONGO_URI ? "Set" : "Not set")
@@ -62,36 +94,6 @@ app.get("/api/health", (req, res) => {
       jwtSecret: !!process.env.JWT_SECRET,
       frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
     },
-  })
-})
-
-app.get("/", (req, res) => {
-  res.json({
-    message: "Attendance Management API",
-    version: "1.0.0",
-    status: "Running",
-    endpoints: {
-      health: "/api/health",
-      auth: {
-        login: "POST /api/auth/login",
-        register: "POST /api/auth/register",
-        logout: "POST /api/auth/logout",
-      },
-      users: {
-        profile: "GET /api/users/profile",
-        update: "PUT /api/users/profile",
-      },
-      attendance: {
-        checkin: "POST /api/attendance/checkin",
-        checkout: "POST /api/attendance/checkout",
-        records: "GET /api/attendance/records",
-      },
-      leave: {
-        apply: "POST /api/leave/apply",
-        requests: "GET /api/leave/requests",
-      },
-    },
-    documentation: "Visit /api/health for system status",
   })
 })
 

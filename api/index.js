@@ -1,8 +1,9 @@
 const app = require("../server.js")
 
-// Serverless function handler for Vercel
 module.exports = (req, res) => {
   console.log("[v0] Serverless function invoked:", req.method, req.url)
+  console.log("[v0] Original URL:", req.originalUrl)
+  console.log("[v0] Path:", req.path)
   console.log("[v0] Environment check:", {
     mongoUri: !!process.env.MONGO_URI,
     jwtSecret: !!process.env.JWT_SECRET,
@@ -10,6 +11,11 @@ module.exports = (req, res) => {
   })
 
   try {
+    // Ensure proper URL handling for root requests
+    if (req.url === "/" || req.url === "" || req.originalUrl === "/") {
+      console.log("[v0] Root route detected, handling directly")
+    }
+
     // Handle the request with Express app
     app(req, res)
   } catch (error) {
