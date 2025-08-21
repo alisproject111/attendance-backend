@@ -85,9 +85,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Something went wrong!" })
 })
 
-const PORT = process.env.PORT || 5000
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
-  console.log(`🌐 Health check: http://localhost:${PORT}/api/health`)
-  console.log(`🔐 Auth endpoint: http://localhost:${PORT}/api/auth/login`)
-})
+module.exports = app
+
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`)
+    console.log(`🌐 Health check: http://localhost:${PORT}/api/health`)
+    console.log(`🔐 Auth endpoint: http://localhost:${PORT}/api/auth/login`)
+  })
+}
