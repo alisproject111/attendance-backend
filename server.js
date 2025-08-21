@@ -1,4 +1,3 @@
-// Make sure to install nodemailer: npm install nodemailer
 const express = require("express")
 const cors = require("cors")
 const mongoose = require("mongoose")
@@ -63,6 +62,36 @@ app.get("/api/health", (req, res) => {
       jwtSecret: !!process.env.JWT_SECRET,
       frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
     },
+  })
+})
+
+app.get("/", (req, res) => {
+  res.json({
+    message: "Attendance Management API",
+    version: "1.0.0",
+    status: "Running",
+    endpoints: {
+      health: "/api/health",
+      auth: {
+        login: "POST /api/auth/login",
+        register: "POST /api/auth/register",
+        logout: "POST /api/auth/logout",
+      },
+      users: {
+        profile: "GET /api/users/profile",
+        update: "PUT /api/users/profile",
+      },
+      attendance: {
+        checkin: "POST /api/attendance/checkin",
+        checkout: "POST /api/attendance/checkout",
+        records: "GET /api/attendance/records",
+      },
+      leave: {
+        apply: "POST /api/leave/apply",
+        requests: "GET /api/leave/requests",
+      },
+    },
+    documentation: "Visit /api/health for system status",
   })
 })
 
