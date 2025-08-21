@@ -82,12 +82,21 @@ app.use("*", (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error("Global error handler:", err.stack)
-  res.status(500).json({ error: "Something went wrong!" })
+  console.error("Error details:", {
+    message: err.message,
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method,
+  })
+  res.status(500).json({
+    error: "Something went wrong!",
+    ...(process.env.NODE_ENV !== "production" && { details: err.message }),
+  })
 })
 
 module.exports = app
 
-if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+if (require.main === module) {
   const PORT = process.env.PORT || 5000
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`)
