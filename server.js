@@ -26,19 +26,25 @@ console.log("Connecting to MongoDB...")
 console.log("MongoDB URI:", process.env.MONGO_URI ? "Set" : "Not set")
 console.log("JWT Secret:", process.env.JWT_SECRET ? "Set" : "Not set")
 
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("✅ MongoDB connected successfully")
-    console.log("Database name:", mongoose.connection.name)
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err)
-    process.exit(1)
-  })
+if (mongoose.connection.readyState === 0) {
+  mongoose
+    .connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => {
+      console.log("✅ MongoDB connected successfully")
+      console.log("Database name:", mongoose.connection.name)
+    })
+    .catch((err) => {
+      console.error("❌ MongoDB connection error:", err)
+      if (process.env.VERCEL !== "1") {
+        process.exit(1)
+      }
+    })
+} else {
+  console.log("✅ MongoDB already connected, state:", mongoose.connection.readyState)
+}
 
 // Routes
 app.use("/api/auth", authRoutes)
