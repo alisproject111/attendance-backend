@@ -13,7 +13,7 @@ const app = express()
 // Middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "https://abhishek-attendance.vercel.app",
     credentials: true,
   }),
 )
@@ -52,17 +52,20 @@ app.get("/", (req, res) => {
   })
 })
 
+const MONGO_URI =
+  "mongodb+srv://flyanytripfalcon:S6tULsn7HIHWkgK0@cluster0.wk0fey8.mongodb.net/Project0?retryWrites=true&w=majority&appName=Cluster0"
+
 // Database connection
 console.log("Connecting to MongoDB...")
-console.log("MongoDB URI:", process.env.MONGO_URI ? "Set" : "Not set")
+console.log("MongoDB URI:", MONGO_URI ? "Set" : "Not set")
 console.log("JWT Secret:", process.env.JWT_SECRET ? "Set" : "Not set")
 
 let cachedConnection = null
 
 const connectDB = async () => {
   try {
-    if (!process.env.MONGO_URI) {
-      throw new Error("MONGO_URI environment variable is not set")
+    if (!MONGO_URI) {
+      throw new Error("MONGO_URI is not set")
     }
 
     if (cachedConnection && mongoose.connection.readyState === 1) {
@@ -72,14 +75,14 @@ const connectDB = async () => {
 
     if (mongoose.connection.readyState === 0) {
       console.log("Establishing new MongoDB connection...")
-      console.log("Connection string format:", process.env.MONGO_URI.substring(0, 20) + "...")
+      console.log("Connection string format:", MONGO_URI.substring(0, 20) + "...")
 
-      const connection = await mongoose.connect(process.env.MONGO_URI, {
+      const connection = await mongoose.connect(MONGO_URI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 5000, // Reduced timeout for faster failure
+        serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
-        maxPoolSize: 1, // Reduced pool size for serverless
+        maxPoolSize: 1,
         minPoolSize: 0,
         maxIdleTimeMS: 30000,
         bufferCommands: false,
@@ -105,7 +108,6 @@ const connectDB = async () => {
       console.error("Error reason:", err.reason)
     }
     cachedConnection = null
-    // Don't exit in serverless environment
     if (process.env.VERCEL !== "1") {
       process.exit(1)
     }
@@ -150,9 +152,9 @@ app.get("/api/health", async (req, res) => {
     connectionAttempted,
     connectionSuccess,
     environment: {
-      mongoUri: !!process.env.MONGO_URI,
+      mongoUri: !!MONGO_URI,
       jwtSecret: !!process.env.JWT_SECRET,
-      frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
+      frontendUrl: process.env.FRONTEND_URL || "https://abhishek-attendance.vercel.app",
     },
   })
 })
