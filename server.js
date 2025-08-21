@@ -57,30 +57,42 @@ console.log("Connecting to MongoDB...")
 console.log("MongoDB URI:", process.env.MONGO_URI ? "Set" : "Not set")
 console.log("JWT Secret:", process.env.JWT_SECRET ? "Set" : "Not set")
 
+let cachedConnection = null
+
 const connectDB = async () => {
   try {
     if (!process.env.MONGO_URI) {
       throw new Error("MONGO_URI environment variable is not set")
     }
 
+    if (cachedConnection && mongoose.connection.readyState === 1) {
+      console.log("✅ Using cached MongoDB connection")
+      return true
+    }
+
     if (mongoose.connection.readyState === 0) {
       console.log("Establishing new MongoDB connection...")
       console.log("Connection string format:", process.env.MONGO_URI.substring(0, 20) + "...")
 
-      await mongoose.connect(process.env.MONGO_URI, {
+      const connection = await mongoose.connect(process.env.MONGO_URI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 10000, // Increased timeout to 10s
+        serverSelectionTimeoutMS: 5000, // Reduced timeout for faster failure
         socketTimeoutMS: 45000,
-        maxPoolSize: 10,
+        maxPoolSize: 1, // Reduced pool size for serverless
+        minPoolSize: 0,
+        maxIdleTimeMS: 30000,
         bufferCommands: false,
         bufferMaxEntries: 0,
       })
+
+      cachedConnection = connection
       console.log("✅ MongoDB connected successfully")
       console.log("Database name:", mongoose.connection.name)
       console.log("Connection host:", mongoose.connection.host)
     } else if (mongoose.connection.readyState === 1) {
       console.log("✅ MongoDB already connected")
+      cachedConnection = mongoose.connection
     } else {
       console.log("MongoDB connection state:", mongoose.connection.readyState)
     }
@@ -92,6 +104,7 @@ const connectDB = async () => {
     if (err.reason) {
       console.error("Error reason:", err.reason)
     }
+    cachedConnection = null
     // Don't exit in serverless environment
     if (process.env.VERCEL !== "1") {
       process.exit(1)
@@ -100,8 +113,13 @@ const connectDB = async () => {
   }
 }
 
-// Connect to database
 connectDB()
+  .then(() => {
+    console.log("Initial connection attempt completed")
+  })
+  .catch((err) => {
+    console.error("Initial connection failed:", err.message)
+  })
 
 // Routes
 app.use("/api/auth", authRoutes)
@@ -113,11 +131,9 @@ app.use("/api/leave", leaveRoutes)
 app.get("/api/health", async (req, res) => {
   let connectionAttempted = false
 
-  if (mongoose.connection.readyState !== 1) {
-    console.log("Database disconnected, attempting to reconnect...")
-    connectionAttempted = true
-    await connectDB()
-  }
+  console.log("Health check - attempting database connection...")
+  connectionAttempted = true
+  const connectionSuccess = await connectDB()
 
   const connectionStates = {
     0: "Disconnected",
@@ -132,6 +148,7 @@ app.get("/api/health", async (req, res) => {
     database: connectionStates[mongoose.connection.readyState] || "Unknown",
     connectionState: mongoose.connection.readyState,
     connectionAttempted,
+    connectionSuccess,
     environment: {
       mongoUri: !!process.env.MONGO_URI,
       jwtSecret: !!process.env.JWT_SECRET,

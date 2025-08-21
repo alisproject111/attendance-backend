@@ -543,7 +543,7 @@ router.post("/forgot-password", async (req, res) => {
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="${resetUrl}" 
-               style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 16px;">
+               style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-b lock; font-weight: bold; font-size: 16px;">
               Reset Your Password
             </a>
           </div>
