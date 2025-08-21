@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken")
 const crypto = require("crypto")
 const router = express.Router()
 const nodemailer = require("nodemailer")
+const mongoose = require("mongoose") // Added for database connection check
 
 // Admin verification code - In production, this should be in environment variables
 const ADMIN_VERIFICATION_CODE = "COMPANY"
@@ -307,6 +308,14 @@ router.post("/login", async (req, res) => {
     console.log("=== LOGIN ATTEMPT ===")
     console.log("Email:", email)
 
+    if (mongoose.connection.readyState !== 1) {
+      console.log("❌ Database not connected, readyState:", mongoose.connection.readyState)
+      return res.status(503).json({
+        error: "Database service temporarily unavailable. Please try again in a moment.",
+        code: "DATABASE_UNAVAILABLE",
+      })
+    }
+
     // Validation
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" })
@@ -387,6 +396,14 @@ router.post("/login", async (req, res) => {
     })
   } catch (error) {
     console.error("Login error:", error)
+
+    if (error.name === "MongooseError" || error.name === "MongoError" || error.message.includes("connection")) {
+      return res.status(503).json({
+        error: "Database connection error. Please try again in a moment.",
+        code: "DATABASE_ERROR",
+      })
+    }
+
     res.status(500).json({ error: "Internal server error" })
   }
 })
