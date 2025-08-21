@@ -57,25 +57,42 @@ console.log("Connecting to MongoDB...")
 console.log("MongoDB URI:", process.env.MONGO_URI ? "Set" : "Not set")
 console.log("JWT Secret:", process.env.JWT_SECRET ? "Set" : "Not set")
 
-if (mongoose.connection.readyState === 0) {
-  mongoose
-    .connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
-    .then(() => {
+const connectDB = async () => {
+  try {
+    if (!process.env.MONGO_URI) {
+      throw new Error("MONGO_URI environment variable is not set")
+    }
+
+    if (mongoose.connection.readyState === 0) {
+      console.log("Establishing new MongoDB connection...")
+      await mongoose.connect(process.env.MONGO_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+        socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+        maxPoolSize: 10, // Maintain up to 10 socket connections
+        bufferCommands: false, // Disable mongoose buffering
+        bufferMaxEntries: 0, // Disable mongoose buffering
+      })
       console.log("✅ MongoDB connected successfully")
       console.log("Database name:", mongoose.connection.name)
-    })
-    .catch((err) => {
-      console.error("❌ MongoDB connection error:", err)
-      if (process.env.VERCEL !== "1") {
-        process.exit(1)
-      }
-    })
-} else {
-  console.log("✅ MongoDB already connected, state:", mongoose.connection.readyState)
+    } else if (mongoose.connection.readyState === 1) {
+      console.log("✅ MongoDB already connected")
+    } else {
+      console.log("MongoDB connection state:", mongoose.connection.readyState)
+    }
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message)
+    console.error("Full error:", err)
+    // Don't exit in serverless environment
+    if (process.env.VERCEL !== "1") {
+      process.exit(1)
+    }
+  }
 }
+
+// Connect to database
+connectDB()
 
 // Routes
 app.use("/api/auth", authRoutes)
@@ -84,7 +101,12 @@ app.use("/api/users", userRoutes)
 app.use("/api/leave", leaveRoutes)
 
 // Health check
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    console.log("Database disconnected, attempting to reconnect...")
+    await connectDB()
+  }
+
   res.json({
     status: "OK",
     timestamp: new Date().toISOString(),
