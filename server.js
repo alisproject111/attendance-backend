@@ -175,7 +175,7 @@ app.get("/api/auth/login", (req, res) => {
 // 404 handler
 app.use("*", (req, res) => {
   console.log("404 - Route not found:", req.originalUrl)
-  res.status(404).json({ error: "Route not found" })
+  res.status(404).json({ error: "Route not founds" })
 })
 
 // Error handling middleware
